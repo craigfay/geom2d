@@ -197,8 +197,8 @@ impl Triangle {
         // Region BC
         else if uabc <= 0.0 && ubc > 0.0 && vbc > 0.0 {
             let closest_point = Point2D {
-                x: ubc * self.b.x + vbc * self.c.x,
-                y: ubc * self.b.y + vbc * self.c.y,
+                x: vbc * self.b.x + ubc * self.c.x,
+                y: vbc * self.b.y + ubc * self.c.y,
             };
             return TriangleVoronoiAnalysis {
                 point: closest_point,
@@ -209,8 +209,8 @@ impl Triangle {
         // Region CA
         else if vabc <= 0.0 && uca > 0.0 && vca > 0.0 {
             let closest_point = Point2D {
-                x: uca * self.c.x + vca * self.a.x,
-                y: uca * self.c.y + vca * self.a.y,
+                x: vca * self.c.x + uca * self.a.x,
+                y: vca * self.c.y + uca * self.a.y,
             };
             return TriangleVoronoiAnalysis {
                 point: closest_point,
@@ -221,8 +221,8 @@ impl Triangle {
         // Region AB
         else if wabc <= 0.0 && uab > 0.0 && vab > 0.0 {
             let closest_point = Point2D {
-                x: uab * self.a.x + vab * self.b.x,
-                y: uab * self.a.y + vab * self.b.y,
+                x: vab * self.a.x + uab * self.b.x,
+                y: vab * self.a.y + uab * self.b.y,
             };
             return TriangleVoronoiAnalysis {
                 point: closest_point,
@@ -329,7 +329,7 @@ impl GJK {
         // This indicates that the query point is very close to an edge or
         // vertex, and failing because of floating point imprecision.
         // What is the correct amount of iterations to allow?? 
-        for i in 0..polygon.len() * 2 {
+        for _ in 0..polygon.len() * 2 {
 
             let iteration = GJK::iterate(&simplex, &query_point);
             let closest_point = iteration.closest_point;
@@ -647,6 +647,46 @@ fn triangle_voronoi_regions() {
 }
 
 #[test]
+fn triangle_voronoi_closest_points() {
+    let triangle = Triangle {
+        a: Point2D::new(3.0, -2.0),
+        b: Point2D::new(-1.0, -2.0),
+        c: Point2D::new(0.0, 0.0),
+    };
+
+    // AB
+    let q = Point2D::new(2.0, -6.0);
+    let va = triangle.do_voronoi_analysis(&q);
+    let point_diff = Vector2D::join(&va.point, &Point2D::new(2.0, -2.0));
+    assert!(point_diff.magnitude() < 0.001);
+
+
+    let triangle = Triangle {
+        a: Point2D::new(0.0, 0.0),
+        b: Point2D::new(3.0, -2.0),
+        c: Point2D::new(-1.0, -2.0),
+    };
+
+    // BC
+    let q = Point2D::new(2.0, -6.0);
+    let va = triangle.do_voronoi_analysis(&q);
+    let point_diff = Vector2D::join(&va.point, &Point2D::new(2.0, -2.0));
+    assert!(point_diff.magnitude() < 0.001);
+
+    let triangle = Triangle {
+        a: Point2D::new(-1.0, -2.0),
+        b: Point2D::new(0.0, 0.0),
+        c: Point2D::new(3.0, -2.0),
+    };
+
+    // CA
+    let q = Point2D::new(2.0, -6.0);
+    let va = triangle.do_voronoi_analysis(&q);
+    let point_diff = Vector2D::join(&va.point, &Point2D::new(2.0, -2.0));
+    assert!(point_diff.magnitude() < 0.001);
+}
+
+#[test]
 fn all_positive_polygon_exterior_point_distance() {
     let square = vec![
         Point2D::new(5.0, 3.0),
@@ -715,5 +755,5 @@ fn all_negative_polygon_almost_vertex_point_distance() {
     let query_point = Point2D::new(-5.001, -2.002);
 
     let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
-    // assert_eq!(distance, 0.0);
+    assert!(distance < 0.01);
 }
