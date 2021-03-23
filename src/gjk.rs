@@ -79,6 +79,7 @@ pub struct SegmentVoronoiAnalysis {
     region: SegmentVoronoiRegion,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum SegmentVoronoiRegion {
     A,
     B,
@@ -328,7 +329,7 @@ impl GJK {
         // This indicates that the query point is very close to an edge or
         // vertex, and failing because of floating point imprecision.
         // What is the correct amount of iterations to allow?? 
-        for _ in 0..polygon.len() * 2 {
+        for i in 0..polygon.len() * 2 {
 
             let iteration = GJK::iterate(&simplex, &query_point);
             let closest_point = iteration.closest_point;
@@ -579,6 +580,34 @@ fn segment_barycentric_outside_reversed() {
     assert!(vba == 1.25);
 }
 
+#[test]
+fn segment_voronoi_analysis_inside() {
+    let a = Point2D::new(1.0, 1.0);
+    let b = Point2D::new(7.0, 1.0);
+    let q = Point2D::new(3.0, 3.0);
+
+    let ab = Segment::new(a, b);
+    let voronoi_analysis = ab.do_voronoi_analysis(&q);
+
+    let expected_point = Point2D::new(3.0, 1.0);
+    let difference = expected_point.minus(&voronoi_analysis.point);
+
+    assert!(difference.x.abs() < 0.01);
+    assert!(difference.y.abs() < 0.01);
+    assert_eq!(voronoi_analysis.region, SegmentVoronoiRegion::AB);
+
+
+    let q = Point2D::new(4.0, -1.0);
+    let voronoi_analysis = ab.do_voronoi_analysis(&q);
+
+    let expected_point = Point2D::new(4.0, 1.0);
+    let difference = expected_point.minus(&voronoi_analysis.point);
+
+    assert!(difference.x.abs() < 0.01);
+    assert!(difference.y.abs() < 0.01);
+    assert_eq!(voronoi_analysis.region, SegmentVoronoiRegion::AB);
+}
+
 
 #[test]
 fn triangle_voronoi_regions() {
@@ -648,7 +677,7 @@ fn half_positive_polygon_interior_point_distance() {
 }
 
 #[test]
-fn all_negative_polygon_vertex_point_distance() {
+fn all_negative_polygon_edge_point_distance() {
     let triangle = vec![
         Point2D::new(-1.0, -1.0),
         Point2D::new(-4.0, -4.0),
@@ -659,4 +688,32 @@ fn all_negative_polygon_vertex_point_distance() {
 
     let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
     assert_eq!(distance, 0.0);
+}
+
+#[test]
+fn all_negative_polygon_vertex_point_distance() {
+    let triangle = vec![
+        Point2D::new(-1.0, -1.0),
+        Point2D::new(-4.0, -4.0),
+        Point2D::new(-5.0, -2.0),
+    ];
+
+    let query_point = Point2D::new(-5.0, -2.0);
+
+    let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
+    assert_eq!(distance, 0.0);
+}
+
+#[test]
+fn all_negative_polygon_almost_vertex_point_distance() {
+    let triangle = vec![
+        Point2D::new(-1.0, -1.0),
+        Point2D::new(-4.0, -4.0),
+        Point2D::new(-5.0, -2.0),
+    ];
+
+    let query_point = Point2D::new(-5.001, -2.002);
+
+    let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
+    // assert_eq!(distance, 0.0);
 }
