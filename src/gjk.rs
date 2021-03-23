@@ -12,7 +12,7 @@ impl Segment {
         Segment { a, b }
     }
 
-    // Express the position of q as a ratio of a, b, and c
+    // Express the position of q as a ratio of a and b
     // https://en.wikipedia.org/wiki/Barycentric_coordinate_system
     pub fn barycentric(&self, q: &Point2D) -> (f32, f32) {
         // Defining a unit vector pointing from a to b
@@ -94,6 +94,7 @@ impl SegmentVoronoiAnalysis {
     }
 }
 
+#[derive(Debug)]
 pub struct TriangleVoronoiAnalysis {
     point: Point2D,
     region: TriangleVoronoiRegion,
@@ -117,6 +118,7 @@ impl TriangleVoronoiAnalysis {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum TriangleVoronoiRegion {
     A,
     B,
@@ -127,6 +129,7 @@ pub enum TriangleVoronoiRegion {
     ABC,
 }
 
+#[derive(Debug)]
 pub struct Triangle {
     a: Point2D,
     b: Point2D,
@@ -167,7 +170,7 @@ impl Triangle {
         let (uabc, vabc, wabc) = self.barycentric(&q);
 
         // Region A
-        if uca <= 0.0 && vab <= 0.0 {
+        if vca <= 0.0 && uab <= 0.0 {
             return TriangleVoronoiAnalysis {
                 point: self.a,
                 region: TriangleVoronoiRegion::A,
@@ -175,7 +178,7 @@ impl Triangle {
         }
 
         // Region B
-        else if uab <= 0.0 && vbc <= 0.0 {
+        else if vab <= 0.0 && ubc <= 0.0 {
             return TriangleVoronoiAnalysis {
                 point: self.b,
                 region: TriangleVoronoiRegion::B,
@@ -183,7 +186,7 @@ impl Triangle {
         }
 
         // Region C
-        else if ubc <= 0.0 && vca <= 0.0 {
+        else if uca <= 0.0 && vbc <= 0.0 {
             return TriangleVoronoiAnalysis {
                 point: self.c,
                 region: TriangleVoronoiRegion::C,
@@ -240,6 +243,7 @@ impl Triangle {
 // A helper struct that contains helpful data that is generated between
 // iterations of the GJK distance algorithm. Without using a helper struct,
 // this data wouldn't be available to higher level functions.
+#[derive(Debug)]
 pub struct IterationResult {
     closest_point: Point2D,
     search_direction: Vector2D,
@@ -289,8 +293,8 @@ impl GJK {
                 let b = s[1];
                 let c = s[0];
 
-                let voronoi_analysis = Triangle::new(a, b, c)
-                    .do_voronoi_analysis(&q);
+                let triangle = Triangle::new(a, b, c);
+                let voronoi_analysis = triangle.do_voronoi_analysis(&q);
 
                 // When the closest point is on an edge, a vector that
                 // points directly at the query point is vulnerable to
@@ -314,7 +318,7 @@ impl GJK {
 
 
     // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf
-    pub fn distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
+    pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
 
         // Picking an arbitrary simplex
         let arbitrary_point = polygon[0];
@@ -514,4 +518,109 @@ fn area_of_scalene_triangle() {
     let c = Point2D::new(-3.0, 0.0);
     let area = Triangle::new(a, b, c).signed_area();
     assert_eq!(area, -5.0);
+}
+
+#[test]
+fn segment_barycentric() {
+    let a = Point2D::new(0.0, 0.0);
+    let b = Point2D::new(4.0, 0.0);
+    let q = Point2D::new(1.0, 0.0);
+
+    let ab = Segment::new(a, b);
+    let (uab, vab) = ab.barycentric(&q);
+
+    assert!(uab == 0.25);
+    assert!(vab == 0.75);
+}
+
+#[test]
+fn segment_barycentric_reversed() {
+    let a = Point2D::new(0.0, 0.0);
+    let b = Point2D::new(4.0, 0.0);
+    let q = Point2D::new(1.0, 0.0);
+
+    let ba = Segment::new(b, a);
+    let (uba, vba) = ba.barycentric(&q);
+
+    assert!(uba == 0.75);
+    assert!(vba == 0.25);
+}
+
+#[test]
+fn segment_barycentric_outside() {
+    let a = Point2D::new(0.0, 0.0);
+    let b = Point2D::new(4.0, 0.0);
+    let q = Point2D::new(5.0, 0.0);
+
+    let ab = Segment::new(a, b);
+    let (uab, vab) = ab.barycentric(&q);
+
+    assert!(uab == 1.25);
+    assert!(vab == -0.25);
+}
+
+#[test]
+fn segment_barycentric_outside_reversed() {
+    let a = Point2D::new(0.0, 0.0);
+    let b = Point2D::new(4.0, 0.0);
+    let q = Point2D::new(5.0, 0.0);
+
+    let ba = Segment::new(b, a);
+    let (uba, vba) = ba.barycentric(&q);
+
+    assert!(uba == -0.25);
+    assert!(vba == 1.25);
+}
+
+
+#[test]
+fn triangle_voronoi_regions() {
+    let triangle = Triangle {
+        a: Point2D::new(3.0, 3.0),
+        b: Point2D::new(3.0, 1.0),
+        c: Point2D::new(5.0, 3.0),
+    };
+
+    let q = Point2D::new(2.0, 5.0);
+    let voronoi_analysis = triangle.do_voronoi_analysis(&q);
+    assert_eq!(voronoi_analysis.region, TriangleVoronoiRegion::A);
+
+    let q = Point2D::new(2.0, 0.0);
+    let voronoi_analysis = triangle.do_voronoi_analysis(&q);
+    assert_eq!(voronoi_analysis.region, TriangleVoronoiRegion::B);
+
+    let q = Point2D::new(6.0, 7.0);
+    let voronoi_analysis = triangle.do_voronoi_analysis(&q);
+    assert_eq!(voronoi_analysis.region, TriangleVoronoiRegion::C);
+
+    let q = Point2D::new(1.0, 2.0);
+    let voronoi_analysis = triangle.do_voronoi_analysis(&q);
+    assert_eq!(voronoi_analysis.region, TriangleVoronoiRegion::AB);
+
+    let q = Point2D::new(4.0, 1.0);
+    let voronoi_analysis = triangle.do_voronoi_analysis(&q);
+    assert_eq!(voronoi_analysis.region, TriangleVoronoiRegion::BC);
+
+    let q = Point2D::new(4.0, 5.0);
+    let voronoi_analysis = triangle.do_voronoi_analysis(&q);
+    assert_eq!(voronoi_analysis.region, TriangleVoronoiRegion::CA);
+
+    let q = Point2D::new(3.5, 2.0);
+    let voronoi_analysis = triangle.do_voronoi_analysis(&q);
+    assert_eq!(voronoi_analysis.region, TriangleVoronoiRegion::ABC);
+}
+
+#[test]
+fn all_positive_polygon_point_distance() {
+    let square = vec![
+        Point2D::new(5.0, 3.0),
+        Point2D::new(5.0, 1.0),
+        Point2D::new(3.0, 1.0),
+        Point2D::new(3.0, 3.0),
+    ];
+
+    let query_point = Point2D::new(1.0, 2.0);
+
+    let distance = GJK::polygon_to_point_distance(&square, &query_point);
+    assert_eq!(distance, 2.0);
 }
