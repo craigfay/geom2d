@@ -624,3 +624,19 @@ fn all_positive_polygon_point_distance() {
     let distance = GJK::polygon_to_point_distance(&square, &query_point);
     assert_eq!(distance, 2.0);
 }
+
+
+#[test]
+fn half_positive_polygon_point_distance() {
+    let triangle = vec![
+        Point2D::new(-1.0, 3.0),
+        Point2D::new(1.0, 1.0),
+        Point2D::new(-2.0, 1.0),
+    ];
+
+    let query_point = Point2D::new(-1.0, 2.0);
+
+    let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
+    assert_eq!(distance, 0.0);
+}
+
