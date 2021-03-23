@@ -324,7 +324,12 @@ impl GJK {
         let arbitrary_point = polygon[0];
         let mut simplex: Vec<Point2D> = vec![arbitrary_point];
 
-        loop {
+        // Terminating if an unusual number of iterations have been done.
+        // This indicates that the query point is very close to an edge or
+        // vertex, and failing because of floating point imprecision.
+        // What is the correct amount of iterations to allow?? 
+        for _ in 0..polygon.len() * 2 {
+
             let iteration = GJK::iterate(&simplex, &query_point);
             let closest_point = iteration.closest_point;
             let search_direction = iteration.search_direction;
@@ -358,6 +363,8 @@ impl GJK {
             // Merging the support point with the current simplex
             simplex.push(support_point);
         }
+
+        0.0
     }
 
     // Determine the point on polygon p which is furthest in the search
@@ -611,7 +618,7 @@ fn triangle_voronoi_regions() {
 }
 
 #[test]
-fn all_positive_polygon_point_distance() {
+fn all_positive_polygon_exterior_point_distance() {
     let square = vec![
         Point2D::new(5.0, 3.0),
         Point2D::new(5.0, 1.0),
@@ -627,7 +634,7 @@ fn all_positive_polygon_point_distance() {
 
 
 #[test]
-fn half_positive_polygon_point_distance() {
+fn half_positive_polygon_interior_point_distance() {
     let triangle = vec![
         Point2D::new(-1.0, 3.0),
         Point2D::new(1.0, 1.0),
@@ -640,3 +647,16 @@ fn half_positive_polygon_point_distance() {
     assert_eq!(distance, 0.0);
 }
 
+#[test]
+fn all_negative_polygon_vertex_point_distance() {
+    let triangle = vec![
+        Point2D::new(-1.0, -1.0),
+        Point2D::new(-4.0, -4.0),
+        Point2D::new(-5.0, -2.0),
+    ];
+
+    let query_point = Point2D::new(-3.0, -3.0);
+
+    let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
+    assert_eq!(distance, 0.0);
+}
