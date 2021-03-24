@@ -1,3 +1,3 @@
 
 pub mod primitives;
-pub mod gjk;
+pub mod distance;

@@ -1,6 +1,17 @@
 
 use super::primitives::Vector2D;
 use super::primitives::Point2D;
+use super::primitives::ConvexPolygon;
+
+trait DistanceToPoint2D {
+    fn distance_to_point(&self, other: &Point2D) -> f32;
+}
+
+impl DistanceToPoint2D for Point2D {
+    fn distance_to_point(&self, other: &Point2D) -> f32 {
+        Vector2D::join(&self, &other).magnitude()
+    }
+}
 
 pub struct Segment {
     a: Point2D,
@@ -657,8 +668,8 @@ fn triangle_voronoi_closest_points() {
     // AB
     let q = Point2D::new(2.0, -6.0);
     let va = triangle.do_voronoi_analysis(&q);
-    let point_diff = Vector2D::join(&va.point, &Point2D::new(2.0, -2.0));
-    assert!(point_diff.magnitude() < 0.001);
+    let distance = va.point.distance_to_point(&Point2D::new(2.0, -2.0));
+    assert!(distance < 0.001);
 
 
     let triangle = Triangle {
@@ -670,8 +681,8 @@ fn triangle_voronoi_closest_points() {
     // BC
     let q = Point2D::new(2.0, -6.0);
     let va = triangle.do_voronoi_analysis(&q);
-    let point_diff = Vector2D::join(&va.point, &Point2D::new(2.0, -2.0));
-    assert!(point_diff.magnitude() < 0.001);
+    let distance = va.point.distance_to_point(&Point2D::new(2.0, -2.0));
+    assert!(distance < 0.001);
 
     let triangle = Triangle {
         a: Point2D::new(-1.0, -2.0),
@@ -682,8 +693,8 @@ fn triangle_voronoi_closest_points() {
     // CA
     let q = Point2D::new(2.0, -6.0);
     let va = triangle.do_voronoi_analysis(&q);
-    let point_diff = Vector2D::join(&va.point, &Point2D::new(2.0, -2.0));
-    assert!(point_diff.magnitude() < 0.001);
+    let distance = va.point.distance_to_point(&Point2D::new(2.0, -2.0));
+    assert!(distance < 0.001);
 }
 
 #[test]

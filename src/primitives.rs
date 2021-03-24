@@ -123,3 +123,14 @@ fn vector_orthagonal_facing() {
     let d = Vector2D::join(&a, &b).orthagonal().facing(&q.minus(&a));
     assert_eq!(d, Vector2D::new(-4.0, 1.0));
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ConvexPolygon {
+    pub vertices: Vec<Point2D>,
+}
+
+impl ConvexPolygon {
+    pub fn new(vertices: Vec<Point2D>) -> ConvexPolygon {
+        ConvexPolygon { vertices }
+    }
+}
