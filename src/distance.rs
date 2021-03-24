@@ -4,12 +4,18 @@ use super::primitives::Point2D;
 use super::primitives::ConvexPolygon;
 
 trait DistanceToPoint2D {
-    fn distance_to_point(&self, other: &Point2D) -> f32;
+    fn distance_to_point(&self, p: &Point2D) -> f32;
 }
 
 impl DistanceToPoint2D for Point2D {
-    fn distance_to_point(&self, other: &Point2D) -> f32 {
-        Vector2D::join(&self, &other).magnitude()
+    fn distance_to_point(&self, p: &Point2D) -> f32 {
+        Vector2D::join(&self, &p).magnitude()
+    }
+}
+
+impl DistanceToPoint2D for ConvexPolygon {
+    fn distance_to_point(&self, p: &Point2D) -> f32 {
+        GJK::polygon_to_point_distance(&self.vertices, &p)
     }
 }
 
@@ -768,3 +774,22 @@ fn all_negative_polygon_almost_vertex_point_distance() {
     let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
     assert!(distance < 0.01);
 }
+
+#[test]
+fn polygon_to_point_distance() {
+    let polygon = ConvexPolygon::new(
+        vec![
+            Point2D::new(-2.0, 2.0),
+            Point2D::new( -2.0, 0.0),
+            Point2D::new(-4.0, 0.0),
+            Point2D::new(-4.0, 2.0),
+        ],
+    );
+
+    let query_point = Point2D::new(0.0, 2.0);
+
+
+    let distance = polygon.distance_to_point(&query_point);
+    assert_eq!(distance, 2.0);
+}
+
