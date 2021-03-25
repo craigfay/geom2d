@@ -337,64 +337,20 @@ impl GJK {
     }
 
 
-    // pub fn polygon_to_polygon_distance(a: &Vec<Point2D>, b: &Vec<Point2D>) -> f32 {
-    //     // search direction
-    //     let mut d = Vector2D::new(1.0, 1.0);
+    pub fn polygon_to_polygon_distance(a: &Vec<Point2D>, b: &Vec<Point2D>) -> f32 {
+        let support_fn = move |d| {
+            // Calculating the support point on the convex hull 
+            // of the minkowski difference of a and b
+            let mut support_a = GJK::support(&a, d);
+            let mut support_b = GJK::support(&b, d.reverse());
+            let mut support_z = support_a.minus(&support_b);
+            support_z
+        };
 
-    //     // Calculating the support point on the convex hull 
-    //     // of the minkowski difference of a and b
-    //     let mut support_a = GJK::support(&a, &d);
-    //     let mut support_b = GJK::support(&a, &d.reverse());
-    //     let mut support_z = support_a.minus(&support_b);
+        let origin = Point2D::new(0.0, 0.0);
+        GJK::abstract_distance(&origin, support_fn)
+    }
 
-    //     let mut simplex = vec![support_z];
-
-    //     // Setting the search direction towards the origin
-    //     d = Vector2D::from_point(&support_z).reverse();
-
-    //     loop {
-    //         let mut support_a = GJK::support(&a, &d);
-    //         let mut support_b = GJK::support(&a, &d.reverse());
-    //         let mut support_z = support_a.minus(&support_b);
-
-    //         let origin_to_z = Vector2D::from_point(&support_z);
-
-    //         if origin_to_z.dot(&d) <= 0.0 {
-    //             return origin_to_z.magnitude();
-    //         }
-
-    //         simplex.push(support_z);
-
-    //         let iteration = GJK::iterate(&simplex, &Point2D::new(0.0, 0.0));
-    //         let closest_point = iteration.closest_point;
-    //         let search_direction = iteration.search_direction;
-    //         let simplex_contains_point = iteration.simplex_contains_point;
-
-    //         // Terminating early if a 3-point simplex contains query_point
-    //         if simplex_contains_point {
-    //             return 0.0
-    //         }
-
-    //         // Terminating early if query_point is also a point on the simplex
-    //         if search_direction == Vector2D::new(0.0, 0.0) {
-    //             return 0.0;
-    //         }
-
-    //         // Culling non-contributing vertices from the simplex
-    //         while simplex.len() >= 3 {
-    //             simplex.remove(0);
-    //         }
-
-    //         // Terminating if the support point is already in the simplex
-    //         for point in &simplex {
-    //             if *point == support_z {
-    //                 return origin_to_z.magnitude();
-    //             }
-    //         }
-
-    //         d = search_direction;
-    //     }
-    // }
 
     pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
         let p2 = polygon.clone();
@@ -482,24 +438,24 @@ impl GJK {
 // would contain the polygon. Conservative Advancement also requires a method
 // for computing the distance between the polygons.
 
-// #[test]
-// fn polygon_to_polygon_distance() {
-//     let a = vec![
-//         Point2D::new(2.0, 2.0),
-//         Point2D::new(2.0, 4.0),
-//         Point2D::new(4.0, 4.0),
-//         Point2D::new(4.0, 2.0),
-//     ];
+#[test]
+fn polygon_to_polygon_distance() {
+    let a = vec![
+        Point2D::new(2.0, 2.0),
+        Point2D::new(2.0, 4.0),
+        Point2D::new(4.0, 4.0),
+        Point2D::new(4.0, 2.0),
+    ];
 
-//     let b = vec![
-//         Point2D::new(-1.0, 2.0),
-//         Point2D::new(-4.0, 2.0),
-//         Point2D::new(-2.0, 4.0),
-//     ];
+    let b = vec![
+        Point2D::new(-1.0, 2.0),
+        Point2D::new(-4.0, 2.0),
+        Point2D::new(-2.0, 4.0),
+    ];
 
-//     let distance = GJK::polygon_to_polygon_distance(&a, &b);
-//     assert_eq!(distance, 3.0)
-// }
+    let distance = GJK::polygon_to_polygon_distance(&a, &b);
+    assert_eq!(distance, 3.0)
+}
 
 #[test]
 fn segment_closest_point() {
