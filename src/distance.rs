@@ -268,6 +268,8 @@ pub struct IterationResult {
     simplex_contains_point: bool,
 }
 
+type SupportFn = dyn Fn(&Vector2D) -> Point2D;
+
 // https://en.wikipedia.org/wiki/Gilbert%E2%80%93Johnson%E2%80%93Keerthi_distance_algorithm
 // https://www.youtube.com/watch?v=MDusDn8oTSE&ab_channel=Winterdev
 // https://www.youtube.com/watch?v=Qupqu1xe7Io
@@ -335,18 +337,88 @@ impl GJK {
     }
 
 
-    // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf
-    pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
+    // pub fn polygon_to_polygon_distance(a: &Vec<Point2D>, b: &Vec<Point2D>) -> f32 {
+    //     // search direction
+    //     let mut d = Vector2D::new(1.0, 1.0);
 
+    //     // Calculating the support point on the convex hull 
+    //     // of the minkowski difference of a and b
+    //     let mut support_a = GJK::support(&a, &d);
+    //     let mut support_b = GJK::support(&a, &d.reverse());
+    //     let mut support_z = support_a.minus(&support_b);
+
+    //     let mut simplex = vec![support_z];
+
+    //     // Setting the search direction towards the origin
+    //     d = Vector2D::from_point(&support_z).reverse();
+
+    //     loop {
+    //         let mut support_a = GJK::support(&a, &d);
+    //         let mut support_b = GJK::support(&a, &d.reverse());
+    //         let mut support_z = support_a.minus(&support_b);
+
+    //         let origin_to_z = Vector2D::from_point(&support_z);
+
+    //         if origin_to_z.dot(&d) <= 0.0 {
+    //             return origin_to_z.magnitude();
+    //         }
+
+    //         simplex.push(support_z);
+
+    //         let iteration = GJK::iterate(&simplex, &Point2D::new(0.0, 0.0));
+    //         let closest_point = iteration.closest_point;
+    //         let search_direction = iteration.search_direction;
+    //         let simplex_contains_point = iteration.simplex_contains_point;
+
+    //         // Terminating early if a 3-point simplex contains query_point
+    //         if simplex_contains_point {
+    //             return 0.0
+    //         }
+
+    //         // Terminating early if query_point is also a point on the simplex
+    //         if search_direction == Vector2D::new(0.0, 0.0) {
+    //             return 0.0;
+    //         }
+
+    //         // Culling non-contributing vertices from the simplex
+    //         while simplex.len() >= 3 {
+    //             simplex.remove(0);
+    //         }
+
+    //         // Terminating if the support point is already in the simplex
+    //         for point in &simplex {
+    //             if *point == support_z {
+    //                 return origin_to_z.magnitude();
+    //             }
+    //         }
+
+    //         d = search_direction;
+    //     }
+    // }
+
+    pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
+        let p2 = polygon.clone();
+
+        let support_fn = move |d| { GJK::support(&p2, d) };
+        GJK::abstract_distance(&query_point, support_fn)
+    }
+
+    // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf
+    pub fn abstract_distance<T: Fn(Vector2D) -> Point2D> (
+        query_point: &Point2D,
+        support: T,
+    ) -> f32 {
         // Picking an arbitrary simplex
-        let arbitrary_point = polygon[0];
+        // let arbitrary_point = polygon[0];
+
+        let arbitrary_point = support(Vector2D::new(1.0, 1.0));
         let mut simplex: Vec<Point2D> = vec![arbitrary_point];
 
         // Terminating if an unusual number of iterations have been done.
         // This indicates that the query point is very close to an edge or
         // vertex, and failing because of floating point imprecision.
         // What is the correct amount of iterations to allow?? 
-        for _ in 0..polygon.len() * 2 {
+        for _ in 0..24 {
 
             let iteration = GJK::iterate(&simplex, &query_point);
             let closest_point = iteration.closest_point;
@@ -369,7 +441,7 @@ impl GJK {
             }
 
             // Determining the vertex furthest in the search direction
-            let support_point = GJK::support(&polygon, &search_direction);
+            let support_point = support(search_direction);
 
             // Terminating if the support point is already in the simplex
             for point in &simplex {
@@ -387,7 +459,7 @@ impl GJK {
 
     // Determine the point on polygon p which is furthest in the search
     // direction d.
-    pub fn support(p: &Vec<Point2D>, d: &Vector2D) -> Point2D {
+    pub fn support(p: &Vec<Point2D>, d: Vector2D) -> Point2D {
         let mut furthest_point = &p[0];
         let mut highest_dp = Vector2D::from_point(&furthest_point).dot(&d);
 
@@ -410,6 +482,24 @@ impl GJK {
 // would contain the polygon. Conservative Advancement also requires a method
 // for computing the distance between the polygons.
 
+// #[test]
+// fn polygon_to_polygon_distance() {
+//     let a = vec![
+//         Point2D::new(2.0, 2.0),
+//         Point2D::new(2.0, 4.0),
+//         Point2D::new(4.0, 4.0),
+//         Point2D::new(4.0, 2.0),
+//     ];
+
+//     let b = vec![
+//         Point2D::new(-1.0, 2.0),
+//         Point2D::new(-4.0, 2.0),
+//         Point2D::new(-2.0, 4.0),
+//     ];
+
+//     let distance = GJK::polygon_to_polygon_distance(&a, &b);
+//     assert_eq!(distance, 3.0)
+// }
 
 #[test]
 fn segment_closest_point() {
@@ -522,7 +612,7 @@ fn gjk_support_point_square() {
         Point2D::new(2.0, 0.0),
     ];
 
-    let support_point = GJK::support(&polygon, &search_direction);
+    let support_point = GJK::support(&polygon, search_direction);
     assert_eq!(support_point, Point2D::new(2.0, 2.0));
 }
 
