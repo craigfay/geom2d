@@ -1,5 +1,5 @@
 
-[Unit Tests](https://github.com/craigfay/performesh/actions/workflows/unit_tests/badge.svg)
+![Unit Tests](https://github.com/craigfay/performesh/actions/workflows/unit_tests/badge.svg)
 
 # About
 
