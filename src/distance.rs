@@ -19,7 +19,7 @@ impl DistanceToPoint2D for ConvexPolygon {
     }
 }
 
-pub struct Segment {
+struct Segment {
     a: Point2D,
     b: Point2D,
 }
@@ -91,13 +91,13 @@ impl Segment {
     }
 }
 
-pub struct SegmentVoronoiAnalysis {
+struct SegmentVoronoiAnalysis {
     point: Point2D,
     region: SegmentVoronoiRegion,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum SegmentVoronoiRegion {
+enum SegmentVoronoiRegion {
     A,
     B,
     AB,
@@ -113,7 +113,7 @@ impl SegmentVoronoiAnalysis {
 }
 
 #[derive(Debug)]
-pub struct TriangleVoronoiAnalysis {
+struct TriangleVoronoiAnalysis {
     point: Point2D,
     region: TriangleVoronoiRegion,
 }
@@ -137,7 +137,7 @@ impl TriangleVoronoiAnalysis {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum TriangleVoronoiRegion {
+enum TriangleVoronoiRegion {
     A,
     B,
     C,
@@ -148,7 +148,7 @@ pub enum TriangleVoronoiRegion {
 }
 
 #[derive(Debug)]
-pub struct Triangle {
+struct Triangle {
     a: Point2D,
     b: Point2D,
     c: Point2D,
@@ -262,7 +262,7 @@ impl Triangle {
 // iterations of the GJK distance algorithm. Without using a helper struct,
 // this data wouldn't be available to higher level functions.
 #[derive(Debug)]
-pub struct IterationResult {
+struct IterationResult {
     closest_point: Point2D,
     search_direction: Vector2D,
     simplex_contains_point: bool,
@@ -275,7 +275,7 @@ type SupportFn = dyn Fn(&Vector2D) -> Point2D;
 // https://www.youtube.com/watch?v=Qupqu1xe7Io
 // GJK is a distance algorithm for convex polygons. It presupposes the presence
 // of several algorithms, implemented below.
-pub struct GJK;
+struct GJK;
 impl GJK {
 
     // Determine the closest point on a simplex s to a query point q,
