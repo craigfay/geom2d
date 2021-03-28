@@ -3,7 +3,7 @@ name: Rust
 on:
     push:
         branches: [ master ]
-    pull_requestpub :
+    pull_request:
         branches: [ master ]
 
 env:
