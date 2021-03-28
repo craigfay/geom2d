@@ -6,16 +6,28 @@ use super::primitives::ConvexPolygon;
 pub trait DistanceToPoint2D {
     fn distance_to_point(&self, p: &Point2D) -> f32;
 }
-
 impl DistanceToPoint2D for Point2D {
     fn distance_to_point(&self, p: &Point2D) -> f32 {
         Vector2D::join(&self, &p).magnitude()
     }
 }
-
 impl DistanceToPoint2D for ConvexPolygon {
     fn distance_to_point(&self, p: &Point2D) -> f32 {
         GJK::polygon_to_point_distance(&self.vertices, &p)
+    }
+}
+
+pub trait DistanceToConvexPolygon {
+    fn distance_to_convex_polygon(&self, p: &ConvexPolygon) -> f32;
+}
+impl DistanceToConvexPolygon for Point2D {
+    fn distance_to_convex_polygon(&self, p: &ConvexPolygon) -> f32 {
+        p.distance_to_point(&self)
+    }
+}
+impl DistanceToConvexPolygon for ConvexPolygon {
+    fn distance_to_convex_polygon(&self, other: &ConvexPolygon) -> f32 {
+        GJK::polygon_to_polygon_distance(&self.vertices, &&other.vertices)
     }
 }
 
