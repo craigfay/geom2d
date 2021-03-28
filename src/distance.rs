@@ -3,7 +3,7 @@ use super::primitives::Vector2D;
 use super::primitives::Point2D;
 use super::primitives::ConvexPolygon;
 
-trait DistanceToPoint2D {
+pub trait DistanceToPoint2D {
     fn distance_to_point(&self, p: &Point2D) -> f32;
 }
 
