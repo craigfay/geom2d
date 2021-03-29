@@ -3,31 +3,28 @@ use super::primitives::Vector2D;
 use super::primitives::Point2D;
 use super::primitives::ConvexPolygon;
 
-pub trait DistanceToPoint2D {
-    fn distance_to_point(&self, p: &Point2D) -> f32;
-}
-impl DistanceToPoint2D for Point2D {
-    fn distance_to_point(&self, p: &Point2D) -> f32 {
-        Vector2D::join(&self, &p).magnitude()
-    }
-}
-impl DistanceToPoint2D for ConvexPolygon {
-    fn distance_to_point(&self, p: &Point2D) -> f32 {
-        GJK::polygon_to_point_distance(&self.vertices, &p)
-    }
+pub trait Distance2D<T> {
+    fn distance(&self, other: T) -> f32;
 }
 
-pub trait DistanceToConvexPolygon {
-    fn distance_to_convex_polygon(&self, p: &ConvexPolygon) -> f32;
-}
-impl DistanceToConvexPolygon for Point2D {
-    fn distance_to_convex_polygon(&self, p: &ConvexPolygon) -> f32 {
-        p.distance_to_point(&self)
+impl Distance2D<&Point2D> for Point2D {
+    fn distance(&self, point: &Point2D) -> f32 {
+        Vector2D::join(&self, &point).magnitude()
     }
 }
-impl DistanceToConvexPolygon for ConvexPolygon {
-    fn distance_to_convex_polygon(&self, other: &ConvexPolygon) -> f32 {
-        GJK::polygon_to_polygon_distance(&self.vertices, &&other.vertices)
+impl Distance2D<&ConvexPolygon> for Point2D {
+    fn distance(&self, polygon: &ConvexPolygon) -> f32 {
+        GJK::polygon_to_point_distance(&polygon.vertices, &self)
+    }
+}
+impl Distance2D<&Point2D> for ConvexPolygon {
+    fn distance(&self, point: &Point2D) -> f32 {
+        GJK::polygon_to_point_distance(&self.vertices, &point)
+    }
+}
+impl Distance2D<&ConvexPolygon> for ConvexPolygon {
+    fn distance(&self, polygon: &ConvexPolygon) -> f32 {
+        GJK::polygon_to_polygon_distance(&self.vertices, &polygon.vertices)
     }
 }
 
@@ -371,14 +368,11 @@ impl GJK {
         GJK::abstract_distance(&query_point, support_fn)
     }
 
-    // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf
+
     pub fn abstract_distance<T: Fn(Vector2D) -> Point2D> (
         query_point: &Point2D,
         support: T,
     ) -> f32 {
-        // Picking an arbitrary simplex
-        // let arbitrary_point = polygon[0];
-
         let arbitrary_point = support(Vector2D::new(1.0, 1.0));
         let mut simplex: Vec<Point2D> = vec![arbitrary_point];
 
@@ -732,7 +726,7 @@ fn triangle_voronoi_closest_points() {
     // AB
     let q = Point2D::new(2.0, -6.0);
     let va = triangle.do_voronoi_analysis(&q);
-    let distance = va.point.distance_to_point(&Point2D::new(2.0, -2.0));
+    let distance = va.point.distance(&Point2D::new(2.0, -2.0));
     assert!(distance < 0.001);
 
 
@@ -745,7 +739,7 @@ fn triangle_voronoi_closest_points() {
     // BC
     let q = Point2D::new(2.0, -6.0);
     let va = triangle.do_voronoi_analysis(&q);
-    let distance = va.point.distance_to_point(&Point2D::new(2.0, -2.0));
+    let distance = va.point.distance(&Point2D::new(2.0, -2.0));
     assert!(distance < 0.001);
 
     let triangle = Triangle {
@@ -757,7 +751,7 @@ fn triangle_voronoi_closest_points() {
     // CA
     let q = Point2D::new(2.0, -6.0);
     let va = triangle.do_voronoi_analysis(&q);
-    let distance = va.point.distance_to_point(&Point2D::new(2.0, -2.0));
+    let distance = va.point.distance(&Point2D::new(2.0, -2.0));
     assert!(distance < 0.001);
 }
 
@@ -847,7 +841,7 @@ fn polygon_to_point_distance() {
     let query_point = Point2D::new(0.0, 2.0);
 
 
-    let distance = polygon.distance_to_point(&query_point);
+    let distance = polygon.distance(&query_point);
     assert_eq!(distance, 2.0);
 }
 
