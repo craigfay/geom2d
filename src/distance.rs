@@ -34,6 +34,7 @@ impl Distance2D<&ConvexPolygon> for ConvexPolygon {
     }
 }
 
+/// The 2D line segment formed between two points
 struct Segment {
     a: Point2D,
     b: Point2D,
