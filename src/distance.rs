@@ -3,25 +3,31 @@ use super::primitives::Vector2D;
 use super::primitives::Point2D;
 use super::primitives::ConvexPolygon;
 
+
+/// Defines an interface for 2D primitives to calculate the distance to other
+/// 2D primitives without having to use a separate method for each type.
 pub trait Distance2D<T> {
     fn distance(&self, other: T) -> f32;
 }
-
+/// Allows a Point2D to calculate distance to a &Point2D
 impl Distance2D<&Point2D> for Point2D {
     fn distance(&self, point: &Point2D) -> f32 {
         Vector2D::join(&self, &point).magnitude()
     }
 }
+/// Allows a Point2D to calculate distance to a &ConvexPolygon
 impl Distance2D<&ConvexPolygon> for Point2D {
     fn distance(&self, polygon: &ConvexPolygon) -> f32 {
         GJK::polygon_to_point_distance(&polygon.vertices, &self)
     }
 }
+/// Allows a ConvexPolygon to calculate distance to a &Point2D
 impl Distance2D<&Point2D> for ConvexPolygon {
     fn distance(&self, point: &Point2D) -> f32 {
         GJK::polygon_to_point_distance(&self.vertices, &point)
     }
 }
+/// Allows a ConvexPolygon to calculate distance to a &ConvexPolygon
 impl Distance2D<&ConvexPolygon> for ConvexPolygon {
     fn distance(&self, polygon: &ConvexPolygon) -> f32 {
         GJK::polygon_to_polygon_distance(&self.vertices, &polygon.vertices)
