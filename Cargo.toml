@@ -7,5 +7,6 @@ license-file = "LICENSE"
 
 [features]
 distance = []
+rigid_body = []
 time_of_impact = ["distance"]
-default = ["distance", "time_of_impact"]
+default = ["distance", "rigid_body", "time_of_impact"]
