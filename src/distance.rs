@@ -370,7 +370,6 @@ impl GJK {
 
     pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
         let p2 = polygon.clone();
-
         let support_fn = move |d| { GJK::support(&p2, d) };
         GJK::abstract_distance(&query_point, support_fn)
     }
@@ -383,16 +382,23 @@ impl GJK {
         let arbitrary_point = support(Vector2D::new(1.0, 1.0));
         let mut simplex: Vec<Point2D> = vec![arbitrary_point];
 
-        // Terminating if an unusual number of iterations have been done.
-        // This indicates that the query point is very close to an edge or
-        // vertex, and failing because of floating point imprecision.
-        // What is the correct amount of iterations to allow?? 
-        for _ in 0..24 {
+        // The largest amount of distance that can be considered negligable
+        let tolerance = 0.0001;
+
+        for _ in 0.. {
 
             let iteration = GJK::iterate(&simplex, &query_point);
             let closest_point = iteration.closest_point;
             let search_direction = iteration.search_direction;
             let simplex_contains_point = iteration.simplex_contains_point;
+
+            // Considering distances smaller than a tolerance to be zero.
+            // This prevents infinite loops when query point is very close to
+            // an edge or vertex, and failing because of float imprecision.
+            let simplex_distance = closest_point.distance(query_point);
+            if  simplex_distance < tolerance {
+                return 0.0;
+            }
 
             // Terminating early if a 3-point simplex contains query_point
             if simplex_contains_point {
