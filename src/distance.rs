@@ -34,6 +34,39 @@ impl Distance2D<&ConvexPolygon> for ConvexPolygon {
     }
 }
 
+impl ConvexPolygon {
+    fn edges(&self) -> Vec<Segment> {
+        let mut edges = vec![];
+        let last_i = self.vertices.len() - 1;
+        for i in 0..last_i {
+            edges.push(Segment::new(self.vertices[i], self.vertices[i + 1]));
+        }
+
+        edges.push(Segment::new(self.vertices[last_i], self.vertices[0]));
+        edges
+    }
+
+    /// Calculate the penetration distance of a point contained by vertices
+    fn point_penetration(&self, point: &Point2D) -> f32 {
+        let mut min_dist = f32::MAX;
+
+        for vertex in &self.vertices {
+            let dist = vertex.distance(point);
+            if dist < min_dist { min_dist = dist }
+        }
+
+        for segment in self.edges() {
+            let voronoi_analysis = segment.do_voronoi_analysis(&point);
+            if voronoi_analysis.region == SegmentVoronoiRegion::AB {
+                let dist = voronoi_analysis.point.distance(point);
+                if dist < min_dist { min_dist = dist }
+            }
+        }
+
+        min_dist
+    }
+}
+
 /// The 2D line segment formed between two points
 struct Segment {
     a: Point2D,
