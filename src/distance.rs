@@ -397,21 +397,23 @@ impl GJK {
         };
 
         let origin = Point2D::new(0.0, 0.0);
-        GJK::abstract_distance(&origin, support_fn)
+        let (dist, contained) = GJK::abstract_distance(&origin, support_fn);
+        dist
     }
 
 
     pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
         let p2 = polygon.clone();
         let support_fn = move |d| { GJK::support(&p2, d) };
-        GJK::abstract_distance(&query_point, support_fn)
+        let (dist, contained) = GJK::abstract_distance(&query_point, support_fn);
+        dist
     }
 
 
     pub fn abstract_distance<T: Fn(Vector2D) -> Point2D> (
         query_point: &Point2D,
         support: T,
-    ) -> f32 {
+    ) -> (f32, bool) {
         let arbitrary_point = support(Vector2D::new(1.0, 1.0));
         let mut simplex: Vec<Point2D> = vec![arbitrary_point];
 
@@ -430,17 +432,17 @@ impl GJK {
             // an edge or vertex, and failing because of float imprecision.
             let simplex_distance = closest_point.distance(query_point);
             if  simplex_distance < tolerance {
-                return 0.0;
+                return (0.0, false);
             }
 
             // Terminating early if a 3-point simplex contains query_point
             if simplex_contains_point {
-                return 0.0
+                return (0.0, false);
             }
 
             // Terminating early if query_point is also a point on the simplex
             if search_direction == Vector2D::new(0.0, 0.0) {
-                return 0.0;
+                return (0.0, false);
             }
 
             // Culling non-contributing vertices from the simplex
@@ -454,7 +456,8 @@ impl GJK {
             // Terminating if the support point is already in the simplex
             for point in &simplex {
                 if *point == support_point {
-                    return Vector2D::join(&closest_point, &query_point).magnitude();
+                    let dist = Vector2D::join(&closest_point, &query_point).magnitude();
+                    return (dist, false);
                 }
             }
 
@@ -462,7 +465,7 @@ impl GJK {
             simplex.push(support_point);
         }
 
-        0.0
+        (0.0, false)
     }
 
     // Determine the point on polygon p which is furthest in the search
