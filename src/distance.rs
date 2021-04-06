@@ -397,7 +397,7 @@ impl GJK {
         };
 
         let origin = Point2D::new(0.0, 0.0);
-        let (dist, point, contained) = GJK::abstract_distance(&origin, support_fn);
+        let (dist, point, contained) = GJK::generalized_distance(&origin, support_fn);
         dist
     }
 
@@ -405,7 +405,7 @@ impl GJK {
     pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
         let p2 = polygon.clone();
         let support_fn = move |d| { GJK::support(&p2, d) };
-        let (dist, point, contained) = GJK::abstract_distance(&query_point, support_fn);
+        let (dist, point, contained) = GJK::generalized_distance(&query_point, support_fn);
         dist
     }
 
@@ -414,12 +414,13 @@ impl GJK {
     // between a 2D structure and that point. The support function is a
     // substitute for knowledge of the shapes whose distance is being
     // calculated. This allows this same function to be used for multiple
-    // combinations of objects that may be distant from one another. One
-    // disadvantage of this approach is that it can't calculate signed
-    // (negative) distance (indicating overlap). To compensate, the function
-    // will return two extra values: the closest point on structure B to
-    // structure A, and a bool indicating whether structure A contains it.
-    pub fn abstract_distance<T: Fn(Vector2D) -> Point2D> (
+    // combinations of objects that require different support functions.
+    // A disadvantage of this approach is that it can't calculate signed
+    // (negative) distance (indicating overlap) easily. To compensate, it
+    // will return two extra values: the closest point on the implied simplex
+    // to the query point, and a bool indicating whether the simplex contains
+    // the query point.
+    pub fn generalized_distance<T: Fn(Vector2D) -> Point2D> (
         query_point: &Point2D,
         support: T,
     ) -> (f32, Point2D, bool) {
