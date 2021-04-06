@@ -397,7 +397,7 @@ impl GJK {
         };
 
         let origin = Point2D::new(0.0, 0.0);
-        let (dist, contained) = GJK::abstract_distance(&origin, support_fn);
+        let (dist, point, contained) = GJK::abstract_distance(&origin, support_fn);
         dist
     }
 
@@ -405,22 +405,31 @@ impl GJK {
     pub fn polygon_to_point_distance(polygon: &Vec<Point2D>, query_point: &Point2D) -> f32 {
         let p2 = polygon.clone();
         let support_fn = move |d| { GJK::support(&p2, d) };
-        let (dist, contained) = GJK::abstract_distance(&query_point, support_fn);
+        let (dist, point, contained) = GJK::abstract_distance(&query_point, support_fn);
         dist
     }
 
 
+    // Given a query point and support function, determine the unsigned distance
+    // between a 2D structure and that point. The support function is a
+    // substitute for knowledge of the shapes whose distance is being
+    // calculated. This allows this same function to be used for multiple
+    // combinations of objects that may be distant from one another. One
+    // disadvantage of this approach is that it can't calculate signed
+    // (negative) distance (indicating overlap). To compensate, the function
+    // will return two extra values: the closest point on structure B to
+    // structure A, and a bool indicating whether structure A contains it.
     pub fn abstract_distance<T: Fn(Vector2D) -> Point2D> (
         query_point: &Point2D,
         support: T,
-    ) -> (f32, bool) {
+    ) -> (f32, Point2D, bool) {
         let arbitrary_point = support(Vector2D::new(1.0, 1.0));
         let mut simplex: Vec<Point2D> = vec![arbitrary_point];
 
         // The largest amount of distance that can be considered negligable
         let tolerance = 0.0001;
 
-        for _ in 0.. {
+        loop {
 
             let iteration = GJK::iterate(&simplex, &query_point);
             let closest_point = iteration.closest_point;
@@ -432,17 +441,17 @@ impl GJK {
             // an edge or vertex, and failing because of float imprecision.
             let simplex_distance = closest_point.distance(query_point);
             if  simplex_distance < tolerance {
-                return (0.0, false);
+                return (0.0, closest_point, false);
             }
 
             // Terminating early if a 3-point simplex contains query_point
             if simplex_contains_point {
-                return (0.0, false);
+                return (0.0, closest_point, false);
             }
 
             // Terminating early if query_point is also a point on the simplex
             if search_direction == Vector2D::new(0.0, 0.0) {
-                return (0.0, false);
+                return (0.0, closest_point, false);
             }
 
             // Culling non-contributing vertices from the simplex
@@ -457,7 +466,7 @@ impl GJK {
             for point in &simplex {
                 if *point == support_point {
                     let dist = Vector2D::join(&closest_point, &query_point).magnitude();
-                    return (dist, false);
+                    return (dist, closest_point, false);
                 }
             }
 
@@ -465,7 +474,6 @@ impl GJK {
             simplex.push(support_point);
         }
 
-        (0.0, false)
     }
 
     // Determine the point on polygon p which is furthest in the search
