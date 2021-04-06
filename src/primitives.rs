@@ -100,6 +100,28 @@ impl Vector2D {
 
 }
 
+#[derive(Debug, PartialEq, Clone, Default)]
+pub struct ConvexPolygon {
+    pub vertices: Vec<Point2D>,
+}
+
+impl ConvexPolygon {
+    pub fn new(vertices: Vec<Point2D>) -> ConvexPolygon {
+        ConvexPolygon { vertices }
+    }
+    pub fn vertex(mut self, v: Point2D) -> ConvexPolygon {
+        self.vertices.push(v);
+        self
+    }
+}
+
+#[test]
+fn convex_polygon_construction() {
+    let p = ConvexPolygon::default()
+        .vertex(Point2D::new(0.0, 0.0))
+        .vertex(Point2D::new(0.0, 4.0))
+        .vertex(Point2D::new(4.0, 4.0));
+}
 
 #[test]
 fn point2d_midpoint() {
@@ -124,13 +146,3 @@ fn vector_orthagonal_facing() {
     assert_eq!(d, Vector2D::new(-4.0, 1.0));
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct ConvexPolygon {
-    pub vertices: Vec<Point2D>,
-}
-
-impl ConvexPolygon {
-    pub fn new(vertices: Vec<Point2D>) -> ConvexPolygon {
-        ConvexPolygon { vertices }
-    }
-}
