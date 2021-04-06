@@ -455,7 +455,7 @@ impl GJK {
 
             // Terminating early if a 3-point simplex contains query_point
             if simplex_contains_point {
-                return (0.0, closest_point, false);
+                return (0.0, closest_point, true);
             }
 
             // Terminating early if query_point is also a point on the simplex
@@ -509,6 +509,21 @@ impl GJK {
 // means that a circle centered at the polygon's centroid with the given radius
 // would contain the polygon. Conservative Advancement also requires a method
 // for computing the distance between the polygons.
+
+#[test]
+fn polygon_point_penetration() {
+    let a = ConvexPolygon::new(vec![
+        Point2D::new(0.0, 0.0),
+        Point2D::new(0.0, 3.0),
+        Point2D::new(3.0, 3.0),
+        Point2D::new(3.0, 0.0),
+    ]);
+
+    let b = Point2D::new(1.0, 1.0);
+
+    let penetration = a.point_penetration(&b);
+    assert_eq!(penetration, 1.0);
+}
 
 #[test]
 fn polygon_to_polygon_distance() {
