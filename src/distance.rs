@@ -400,7 +400,7 @@ impl GJK {
         let (dist, point, contained) = GJK::generalized_distance(&origin, support_fn);
 
         match contained {
-            true => ConvexPolygon::new(a.to_vec()).point_penetration(&point),
+            true => -1.0 * ConvexPolygon::new(a.to_vec()).point_penetration(&point),
             false => dist
         }
     }
@@ -411,8 +411,13 @@ impl GJK {
         let support_fn = move |d| { GJK::support(&p2, d) };
         let (dist, point, contained) = GJK::generalized_distance(&query_point, support_fn);
 
+        // Negative distance only needs to be calculated when the query point
+        // is contained, which is good because calculating it is more expensive.
+        // Optimizations to the calculation of signed distance are needed, and
+        // floating point imprecision can cause false positives when detecting
+        // penetrations.
         match contained {
-            true => ConvexPolygon::new(polygon.to_vec()).point_penetration(&point),
+            true => -1.0 * ConvexPolygon::new(polygon.to_vec()).point_penetration(&point),
             false => dist
         }
     }
@@ -450,7 +455,10 @@ impl GJK {
             // an edge or vertex, and failing because of float imprecision.
             let simplex_distance = closest_point.distance(query_point);
             if  simplex_distance < tolerance {
-                return (0.0, closest_point, false);
+                // To be conservative, this condition will also return a value
+                // indicating that the point is contained, even though that
+                // claim is ambiguous.
+                return (0.0, closest_point, true);
             }
 
             // Terminating early if a 3-point simplex contains query_point
@@ -523,6 +531,40 @@ fn polygon_point_penetration() {
 
     let penetration = a.point_penetration(&b);
     assert_eq!(penetration, 1.0);
+}
+
+#[test]
+fn polygon_point_negative_distance() {
+    let a = ConvexPolygon::new(vec![
+        Point2D::new(0.0, 0.0),
+        Point2D::new(0.0, 3.0),
+        Point2D::new(3.0, 3.0),
+        Point2D::new(3.0, 0.0),
+    ]);
+
+    let b = Point2D::new(1.0, 2.0);
+
+    let dist = a.distance(&b);
+    assert_eq!(dist, -1.0);
+}
+
+#[test]
+fn polygon_point_negative_distance_interior_edge() {
+    let a = ConvexPolygon::new(vec![
+        Point2D::new(0.0, 0.0),
+        Point2D::new(0.0, 3.0),
+        Point2D::new(3.0, 3.0),
+        Point2D::new(3.0, 0.0),
+    ]);
+
+    // This point falls on an edge between two points of a, and will cause
+    // a floating point imprecision condition.
+    let b = Point2D::new(1.0, 1.0);
+
+    // Floating point rounding errors interfere with practical knowledge of the
+    // exact point, but it can be expected to be very small.
+    let dist = a.distance(&b);
+    assert!(dist - -1.0 < 0.001);
 }
 
 #[test]
@@ -854,6 +896,14 @@ fn all_positive_polygon_exterior_point_distance() {
 
 #[test]
 fn half_positive_polygon_interior_point_distance() {
+    /*
+     * * * * * *  * *
+     * * * A * *  * *
+     * * C Q * *  * *
+     * * * * * B  * *
+     * * * * O *  * *
+     * * * * * *  * *
+    */
     let triangle = vec![
         Point2D::new(-1.0, 3.0),
         Point2D::new(1.0, 1.0),
@@ -863,7 +913,8 @@ fn half_positive_polygon_interior_point_distance() {
     let query_point = Point2D::new(-1.0, 2.0);
 
     let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
-    assert_eq!(distance, 0.0);
+    let expected_distance = -0.447;
+    assert!((distance - expected_distance).abs() < 0.01);
 }
 
 #[test]
@@ -877,7 +928,8 @@ fn all_negative_polygon_edge_point_distance() {
     let query_point = Point2D::new(-3.0, -3.0);
 
     let distance = GJK::polygon_to_point_distance(&triangle, &query_point);
-    assert_eq!(distance, 0.0);
+    let expected_distance = 0.0;
+    assert!((distance - expected_distance).abs() < 0.001);
 }
 
 #[test]
