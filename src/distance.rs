@@ -398,7 +398,11 @@ impl GJK {
 
         let origin = Point2D::new(0.0, 0.0);
         let (dist, point, contained) = GJK::generalized_distance(&origin, support_fn);
-        dist
+
+        match contained {
+            true => ConvexPolygon::new(a.to_vec()).point_penetration(&point),
+            false => dist
+        }
     }
 
 
@@ -406,7 +410,11 @@ impl GJK {
         let p2 = polygon.clone();
         let support_fn = move |d| { GJK::support(&p2, d) };
         let (dist, point, contained) = GJK::generalized_distance(&query_point, support_fn);
-        dist
+
+        match contained {
+            true => ConvexPolygon::new(polygon.to_vec()).point_penetration(&point),
+            false => dist
+        }
     }
 
 
