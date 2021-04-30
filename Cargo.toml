@@ -1,5 +1,5 @@
 [package]
-name = "geom2d"
+name = "performesh"
 version = "0.1.0"
 authors = ["craig fay <craigfay1@gmail.com>"]
 edition = "2018"
